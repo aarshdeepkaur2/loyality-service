@@ -68,20 +68,35 @@ app.get("/api/customers/:id", (req: Request, res: Response): void => {
  */
 app.post("/api/customers/:id/purchase", (req: Request, res: Response): void => {
 	const customerId: number = parseInt(req.params.id);
-	const customer: Customer | undefined = customers.find(
-		(c) => c.id === customerId
-	);
+	const customer: Customer | undefined = customers.find((c) => c.id === customerId);
 	if (!customer) {
 		res.status(404).send("Customer not found");
 		return;
 	}
 
-	const purchaseAmount: number = req.body.amount;
-	const storeLocation: string = req.body.storeLocation;
+	// Validate request body (NEW VALIDATION)
+	const { amount, storeLocation } = req.body;
+	if (!amount || typeof amount !== "number") {
+		res.status(400).send("Invalid purchase amount");
+		return;
+	}
+	if (!storeLocation || typeof storeLocation !== "string") {
+		res.status(400).send("Invalid store location");
+		return;
+	}
 
-	customer.points += Math.floor(purchaseAmount / 10);
+	// Add points based on purchase amount
+	customer.points += Math.floor(amount / 10);
+
+	// Check for preferred store bonus points (NEW LOGIC)
+	if (storeLocation === customer.preferredStore) {
+		customer.points += 50; // Add 50 bonus points for preferred store
+	}
+
+	// Update last purchase date
 	customer.lastPurchaseDate = new Date().toISOString();
 
+	// Update status based on new points total
 	if (customer.points >= 750) {
 		customer.status = "GOLD";
 		customer.lastStatusChange = new Date().toISOString();
