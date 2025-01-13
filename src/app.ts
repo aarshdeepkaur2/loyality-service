@@ -6,6 +6,7 @@ import express, { Request, Response, Express } from "express";
 interface Customer {
 	id: number;
 	name: string;
+
 	status: "GOLD" | "SILVER" | "BRONZE" | "PLATINUM";
 	points: number;
 	lastPurchaseDate: string;
@@ -80,6 +81,39 @@ app.post("/api/customers/:id/purchase", (req: Request, res: Response): void => {
 	const storeLocation: string = req.body.storeLocation;
 
 	customer.points += Math.floor(purchaseAmount / 10);
+  
+   // Constant defined for earning bonus points 
+
+    const POINTS_PER_DOLLAR = 100; 
+
+    //Amount limit for earning bonus points
+	const BONUS_LIMIT = 5000; 
+
+    //Bonus multiplier if the amount exceeds
+	const BONUS_MULTIPLIER = 2; 
+
+    // if the purchase amount is less than  zero 
+	if (!purchaseAmount || purchaseAmount <= 0) {
+		res.status(400).send("Invalid purchase amount");
+		return;
+	}
+
+	// Base points calculation
+	let pointsEarned = Math.floor(purchaseAmount / POINTS_PER_DOLLAR);
+
+	// Apply bonus points if purchase amount exceeds bonus limit
+	if (purchaseAmount >= BONUS_LIMIT) {
+		const bonusPoints = Math.floor(
+			(purchaseAmount - BONUS_LIMIT) / POINTS_PER_DOLLAR
+		);
+		pointsEarned += bonusPoints * BONUS_MULTIPLIER;
+	}
+
+	// Increase in the customers points  
+	customer.points += pointsEarned;
+	customer.lastPurchaseDate = new Date().toISOString();
+
+	if (customer.points >= 750) {
 	customer.lastPurchaseDate = new Date().toISOString();
 
     // Adjust point calculation for GOLD members
